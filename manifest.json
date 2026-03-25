@@ -2,7 +2,7 @@
     "name": "描摹助手",
     "short_name": "描摹助手",
     "description": "便捷的图片描摹辅助工具，支持摄像头、灯箱、线稿生成",
-    "start_url": "./描摹助手.html",
+    "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#1a1a1a",
     "theme_color": "#007aff",
