@@ -1,7 +1,7 @@
 // 缓存版本和需要缓存的资源
 const CACHE_NAME = 'trace-helper-v1';
 const CACHE_ASSETS = [
-    './描摹助手.html',
+    './index.html',
     './icon-192x192.png',
     './icon-512x512.png',
     './manifest.json'
