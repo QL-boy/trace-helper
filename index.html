@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<!-- PWA核心适配标签 -->
+<meta name="theme-color" content="#007aff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="描摹助手">
+<link rel="apple-touch-icon" href="./icon-192x192.png">
+<link rel="manifest" href="./manifest.json">
+<title>描摹助手</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#1a1a1a;--sf:#2c2c2c;--sfh:#3a3a3a;--pri:#007aff;--txt:#e0e0e0;--dim:#888;--brd:#444;--dan:#ff3b30;--sab:env(safe-area-inset-bottom,0px);--sat:env(safe-area-inset-top,0px)}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+#mc{position:fixed;top:0;left:0;width:100%;height:100%;display:block;z-index:1}
+#vid{display:none}
+.pnl{position:fixed;z-index:100;background:var(--sf);overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--brd) transparent;transition:transform .3s ease}
+.pnl::-webkit-scrollbar{width:4px}.pnl::-webkit-scrollbar-thumb{background:var(--brd);border-radius:2px}
+@media(max-width:767px){
+.pnl{bottom:0;left:0;right:0;max-height:65vh;border-radius:16px 16px 0 0;padding:6px 12px calc(10px + var(--sab));transform:translateY(100%)}
+.pnl.peek{transform:translateY(calc(100% - 52px))}
+.pnl.open{transform:translateY(0)}
+.ph{display:flex;justify-content:center;padding:8px 0;cursor:grab}
+.ph .bar{width:40px;height:4px;background:var(--dim);border-radius:2px}
+.side-only{display:none!important}
+.tbtn{bottom:calc(12px + var(--sab));right:12px;width:48px;height:48px}
+.pnl.open~.tbtn{opacity:0;pointer-events:none}
+}
+@media(min-width:768px){
+.pnl{top:0;right:0;width:272px;height:100%;border-left:1px solid var(--brd);padding:14px;transform:translateX(0)}
+.pnl.collapsed{transform:translateX(272px)}
+.ph{display:none}
+.mob-only{display:none!important}
+.tbtn{top:12px;right:284px;width:36px;height:36px}
+.pnl.collapsed~.tbtn{right:12px}
+}
+.tbtn{position:fixed;z-index:101;background:var(--sf);border:1px solid var(--brd);color:var(--txt);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s}
+.mtabs{display:flex;gap:4px;margin-bottom:10px}
+.mt{flex:1;padding:8px 2px;border:none;border-radius:8px;background:transparent;color:var(--dim);font-size:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:44px;transition:all .2s}
+.mt.act{background:var(--pri);color:#fff}.mt:not(.act):hover{background:var(--sfh)}
+.mt svg{width:18px;height:18px}.mt.hid{display:none}
+.cs{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--brd)}.cs:last-child{border-bottom:none}.cs.hid{display:none}
+.cl{font-size:10px;color:var(--dim);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.cr{display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap}
+.cr label{font-size:11px;min-width:50px;color:var(--dim)}.cr input[type=range]{flex:1;min-width:70px;accent-color:var(--pri);height:22px}
+.cr .v{font-size:11px;min-width:32px;text-align:right;color:var(--txt);font-variant-numeric:tabular-nums}
+.b{min-width:44px;min-height:44px;padding:6px 10px;border:1px solid var(--brd);border-radius:8px;background:var(--sf);color:var(--txt);font-size:11px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;white-space:nowrap}
+.b:hover{background:var(--sfh)}.b:active{transform:scale(.95)}.b.act{background:var(--pri);border-color:var(--pri);color:#fff}
+.b.dan{border-color:var(--dan);color:var(--dan)}.b svg{width:15px;height:15px;flex-shrink:0}
+.bg{display:grid;grid-template-columns:1fr 1fr;gap:5px}.bg .f{grid-column:1/-1}
+.ov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}.ov.sh{opacity:1;pointer-events:auto}
+.ob{background:var(--sf);border-radius:16px;padding:18px;max-width:90vw;max-height:80vh;overflow-y:auto;min-width:260px}
+.ot{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.xb{width:32px;height:32px;border:none;background:none;color:var(--txt);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;border-radius:50%}.xb:hover{background:var(--sfh)}
+.hg{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px}
+.hi{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .2s}.hi:hover{border-color:var(--pri)}
+.hi img{width:100%;height:100%;object-fit:cover}
+.hi .dl{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+.hi .tm{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.75);font-size:8px;padding:2px;text-align:center;color:#bbb}
+.cm{list-style:none}.cm li{padding:10px 14px;cursor:pointer;border-radius:8px;transition:background .15s;display:flex;align-items:center;gap:8px;font-size:13px}
+.cm li:hover{background:var(--sfh)}.cm li.act{color:var(--pri)}.cm li.act::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--pri)}
+.ld{position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}.ld.sh{opacity:1;pointer-events:auto}
+.sp{width:36px;height:36px;border:3px solid var(--brd);border-top-color:var(--pri);border-radius:50%;animation:spn .8s linear infinite}
+@keyframes spn{to{transform:rotate(360deg)}}
+.tt{position:fixed;top:calc(16px + var(--sat));left:50%;transform:translateX(-50%) translateY(-80px);z-index:300;background:var(--sf);border:1px solid var(--brd);border-radius:10px;padding:10px 18px;font-size:12px;transition:transform .3s ease;max-width:88vw;text-align:center;pointer-events:none}.tt.sh{transform:translateX(-50%) translateY(0)}
+.em{text-align:center;color:var(--dim);padding:16px;font-size:12px}
+</style>
+</head>
+<body>
+<canvas id="mc"></canvas>
+<video id="vid" playsinline autoplay muted></video>
+<input type="file" id="fi" accept="image/*" style="display:none">
+<div class="pnl" id="pnl">
+<div class="ph mob-only" id="ph"><div class="bar"></div></div>
+<div class="mtabs" id="mt">
+<button class="mt act" data-m="camera" id="tCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>相机</button>
+<button class="mt" data-m="lightbox" id="tLb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>灯箱</button>
+<button class="mt" data-m="lineart" id="tLa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>线稿</button>
+</div>
+<div class="cs" id="sImp"><div class="cl">参考图</div><div class="bg"><button class="b" id="bImp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>导入</button><button class="b" id="bHis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>历史</button></div></div>
+<div class="cs" id="sOp"><div class="cr"><label>透明度</label><input type="range" id="rOp" min="0" max="100" value="50"><span class="v" id="vOp">50%</span></div></div>
+<div class="cs hid" id="sCam"><div class="cl">摄像头</div><div class="bg"><button class="b" id="bCsw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>切换</button><button class="b" id="bCfr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="12" cy="12" r="3"/></svg>定格</button></div></div>
+<div class="cs hid" id="sLb"><div class="cl">图片增强</div><div class="cr"><label>对比度</label><input type="range" id="rCon" min="-100" max="100" value="0"><span class="v" id="vCon">0</span></div><div class="bg"><button class="b f" id="bInv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 000 20z" fill="currentColor"/></svg>黑白反相</button></div></div>
+<div class="cs hid" id="sLa"><div class="cl">线稿参数</div><div class="cr"><label>边缘强度</label><input type="range" id="rStr" min="1" max="100" value="50"><span class="v" id="vStr">50</span></div><div class="cr"><label>线条粗细</label><input type="range" id="rThk" min="1" max="10" value="2"><span class="v" id="vThk">2</span></div><div class="cr"><label>平滑去噪</label><input type="range" id="rSmo" min="0" max="10" value="3"><span class="v" id="vSmo">3</span></div><div class="bg"><button class="b f" id="bProc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21"/></svg>生成线稿</button><button class="b f" id="bUseLa" disabled>设为参考图</button><button class="b f" id="bTogPv">切换预览</button></div></div>
+<div class="cs" id="sCom"><div class="bg"><button class="b" id="bLock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>锁定</button><button class="b" id="bGrid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>网格</button><button class="b f" id="bRst"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>重置变换</button></div><div class="cr hid" id="rGsz"><label>网格间距</label><input type="range" id="rGs" min="20" max="200" value="50"><span class="v" id="vGs">50</span></div></div>
+<div class="cs" id="sWk"><div class="bg"><button class="b f" id="bWk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>屏幕常亮</button></div></div>
+</div>
+<button class="tbtn" id="tbtn"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+<div class="ov" id="oHis"><div class="ob"><div class="ot">历史图片<button class="xb" id="xHis">&times;</button></div><div class="hg" id="hGrid"></div><div class="em" id="hEmp">暂无历史图片</div><div style="margin-top:10px;text-align:center"><button class="b dan" id="bHclr">清空全部</button></div></div></div>
+<div class="ov" id="oCam"><div class="ob"><div class="ot">选择摄像头<button class="xb" id="xCam">&times;</button></div><ul class="cm" id="cList"></ul></div></div>
+<div class="ld" id="oLd"><div class="sp"></div><span id="ldTxt">处理中...</span></div>
+<div class="tt" id="tt"></div>
+<script>
+'use strict';
+const S={mode:'camera',ref:null,refId:null,tx:0,ty:0,sc:1,rot:0,op:50,con:0,inv:false,gridOn:false,gridSz:50,locked:false,
+camLk:false,camFr:null,cams:[],camId:null,stream:null,hasCam:true,wl:null,wlOn:false,laRes:null,laPv:false,db:null,dbOk:false};
+const $=id=>document.getElementById(id);
+const cv=$('mc'),cx=cv.getContext('2d'),vd=$('vid'),fi=$('fi'),pnl=$('pnl');
+let dpr=1,raf=0,needR=false;
+
+/* Toast */
+function toast(m,d=2500){const t=$('tt');t.textContent=m;t.classList.add('sh');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('sh'),d)}
+function showLd(t='处理中...'){$('ldTxt').textContent=t;$('oLd').classList.add('sh')}
+function hideLd(){$('oLd').classList.remove('sh')}
+
+/* Resize */
+function resize(){dpr=devicePixelRatio||1;const w=innerWidth,h=innerHeight;cv.width=w*dpr;cv.height=h*dpr;cv.style.width=w+'px';cv.style.height=h+'px';redraw()}
+addEventListener('resize',resize);
+
+/* IndexedDB */
+function openDB(){return new Promise((r,j)=>{if(!indexedDB){j('no idb');return}const q=indexedDB.open('trace',1);q.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('img'))d.createObjectStore('img',{keyPath:'id'})};q.onsuccess=()=>{S.db=q.result;S.dbOk=true;r()};q.onerror=()=>j(q.error)})}
+function idbPut(o){return new Promise((r,j)=>{if(!S.dbOk)return j();const t=S.db.transaction('img','readwrite');t.objectStore('img').put(o);t.oncomplete=r;t.onerror=()=>j(t.error)})}
+function idbGet(id){return new Promise((r,j)=>{if(!S.dbOk)return j();const t=S.db.transaction('img','readonly'),q=t.objectStore('img').get(id);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
+function idbDel(id){return new Promise(r=>{if(!S.dbOk)return r();const t=S.db.transaction('img','readwrite');t.objectStore('img').delete(id);t.oncomplete=r;t.onerror=r})}
+
+/* History meta */
+function hMeta(){try{return JSON.parse(localStorage.getItem('hm')||'[]')}catch{return[]}}
+function hMetaSet(a){try{localStorage.setItem('hm',JSON.stringify(a))}catch{}}
+
+async function rsz(blob,mx){const img=await createImageBitmap(blob);if(img.width<=mx&&img.height<=mx)return blob;const s=mx/Math.max(img.width,img.height),w=Math.round(img.width*s),h=Math.round(img.height*s),c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);return new Promise(r=>c.toBlob(r,'image/jpeg',.85))}
+async function thumb(blob,sz=96){const img=await createImageBitmap(blob);const s=sz/Math.max(img.width,img.height),w=Math.round(img.width*s),h=Math.round(img.height*s),c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);return c.toDataURL('image/jpeg',.5)}
+
+async function histSave(blob){
+  try{const id='i'+Date.now()+'_'+Math.random().toString(36).slice(2,5);const th=await thumb(blob);let meta=hMeta();
+  if(S.dbOk){const st=await rsz(blob,2048);await idbPut({id,blob:st})}
+  else{const sm=await rsz(blob,1024);const b64=await new Promise(r=>{const rd=new FileReader();rd.onload=()=>r(rd.result);rd.readAsDataURL(sm)});try{localStorage.setItem(id,b64)}catch{toast('存储空间不足');return id}}
+  meta.unshift({id,th,t:Date.now()});if(meta.length>10){const old=meta.pop();if(S.dbOk)idbDel(old.id);else try{localStorage.removeItem(old.id)}catch{}}
+  hMetaSet(meta);return id}catch(e){console.error(e);return null}}
+
+async function histLoad(id){
+  try{if(S.dbOk){const r=await idbGet(id);if(!r)throw 0;return r.blob}else{const b=localStorage.getItem(id);if(!b)throw 0;return(await fetch(b)).blob()}}catch{toast('加载失败');return null}}
+
+function histDel(id){let m=hMeta();m=m.filter(x=>x.id!==id);hMetaSet(m);if(S.dbOk)idbDel(id);else try{localStorage.removeItem(id)}catch{}}
+
+/* Prefs */
+function saveP(){try{localStorage.setItem('pr',JSON.stringify({op:S.op,gOn:S.gridOn,gSz:S.gridSz,cId:S.camId,con:S.con,inv:S.inv,wl:S.wlOn}))}catch{}}
+function loadP(){try{const p=JSON.parse(localStorage.getItem('pr')||'{}');if(p.op!=null)S.op=p.op;if(p.gOn!=null)S.gridOn=p.gOn;if(p.gSz!=null)S.gridSz=p.gSz;if(p.cId)S.camId=p.cId;if(p.con!=null)S.con=p.con;if(p.inv!=null)S.inv=p.inv;if(p.wl!=null)S.wlOn=p.wl}catch{}}
+
+/* Camera */
+async function detectCam(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){S.hasCam=false;return}
+  try{const d=await navigator.mediaDevices.enumerateDevices();S.cams=d.filter(x=>x.kind==='videoinput');
+  if(!S.cams.length){try{const tmp=await navigator.mediaDevices.getUserMedia({video:true});tmp.getTracks().forEach(t=>t.stop())}catch{S.hasCam=false;return}
+  const d2=await navigator.mediaDevices.enumerateDevices();S.cams=d2.filter(x=>x.kind==='videoinput')}
+  S.hasCam=S.cams.length>0;if(S.hasCam&&!S.camId)S.camId=S.cams[0].deviceId}catch(e){console.error(e);S.hasCam=false}}
+
+async function startCam(did){
+  if(!S.hasCam)return;
+  try{if(S.stream&&S.camId===did){vd.srcObject=S.stream;await vd.play();S.camLk=false;S.camFr=null;startLoop();return}
+  stopCam();const c={video:{width:{ideal:1920},height:{ideal:1080}}};if(did)c.video.deviceId={exact:did};else c.video.facingMode='environment';
+  S.stream=await navigator.mediaDevices.getUserMedia(c);vd.srcObject=S.stream;await vd.play();
+  const st=S.stream.getVideoTracks()[0].getSettings();S.camId=st.deviceId||did;S.camLk=false;S.camFr=null;saveP();startLoop()}
+  catch(e){console.error(e);toast('摄像头启动失败');S.hasCam=false;updUI()}}
+
+function stopCam(){if(S.stream){S.stream.getTracks().forEach(t=>t.stop());S.stream=null}vd.srcObject=null;stopLoop()}
+function pauseCam(){if(S.stream)S.stream.getTracks().forEach(t=>t.enabled=false)}
+function resumeCam(){if(S.stream)S.stream.getTracks().forEach(t=>t.enabled=true)}
+function startLoop(){stopLoop();(function lp(){raf=requestAnimationFrame(lp);render()})()}
+function stopLoop(){if(raf){cancelAnimationFrame(raf);raf=0}}
+
+/* Wake Lock */
+async function reqWL(){if(!('wakeLock'in navigator))return;try{S.wl=await navigator.wakeLock.request('screen')}catch{}}
+function relWL(){if(S.wl){S.wl.release().catch(()=>{});S.wl=null}}
+function updWL(){if(S.wlOn&&(S.mode==='camera'||S.mode==='lightbox'))reqWL();else relWL()}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){updWL();if(S.mode==='camera'&&S.hasCam){if(S.stream&&!S.camLk){resumeCam();startLoop()}else if(!S.stream&&!S.camLk)startCam(S.camId)}}});
+
+/* Image loading */
+async function loadImg(blob,keep){
+  try{showLd('加载图片...');const img=await createImageBitmap(blob);S.ref=img;if(!keep)fitImg();S.laRes=null;S.laPv=false;$('bUseLa').disabled=true;hideLd();redraw();return true}catch(e){hideLd();toast('图片加载失败');return false}}
+
+function fitImg(){if(!S.ref)return;const w=innerWidth,h=innerHeight,iw=S.ref.width,ih=S.ref.height;const s=Math.min(w*.8/iw,h*.75/ih,1);S.tx=w/2;S.ty=h/2;S.sc=s;S.rot=0}
+
+/* Render */
+function redraw(){if(S.mode==='camera'&&!S.camLk&&raf)return;if(!needR){needR=true;requestAnimationFrame(()=>{needR=false;render()})}}
+
+function render(){
+  const w=cv.width/dpr,h=cv.height/dpr;cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,w,h);
+  if(S.mode==='camera'){
+    if(S.camLk&&S.camFr){const vw=S.camFr.width,vh=S.camFr.height,sc=Math.max(w/vw,h/vh);cx.drawImage(S.camFr,(w-vw*sc)/2,(h-vh*sc)/2,vw*sc,vh*sc)}
+    else if(vd.readyState>=2){const vw=vd.videoWidth,vh=vd.videoHeight,sc=Math.max(w/vw,h/vh);cx.drawImage(vd,(w-vw*sc)/2,(h-vh*sc)/2,vw*sc,vh*sc)}
+    else{cx.fillStyle='#000';cx.fillRect(0,0,w,h)}
+    drawRef();drawGrid(w,h);
+  }else if(S.mode==='lightbox'){
+    cx.fillStyle='#fff';cx.fillRect(0,0,w,h);drawRef();drawGrid(w,h);
+  }else{
+    if(S.laPv&&S.laRes){cx.fillStyle='#fff';cx.fillRect(0,0,w,h);drawImg(S.laRes)}
+    else{cx.fillStyle='#222';cx.fillRect(0,0,w,h);drawRef()}
+    drawGrid(w,h);
+  }
+}
+
+function drawRef(){if(!S.ref)return;cx.save();cx.globalAlpha=S.op/100;
+  if(S.mode==='lightbox'){const f=[];if(S.con!==0)f.push('contrast('+(1+S.con/100)+')');if(S.inv)f.push('invert(1)');if(f.length)cx.filter=f.join(' ')}
+  cx.translate(S.tx,S.ty);cx.rotate(S.rot);cx.scale(S.sc,S.sc);cx.drawImage(S.ref,-S.ref.width/2,-S.ref.height/2);cx.restore()}
+
+function drawImg(img){cx.save();cx.globalAlpha=S.op/100;cx.translate(S.tx,S.ty);cx.rotate(S.rot);cx.scale(S.sc,S.sc);cx.drawImage(img,-img.width/2,-img.height/2);cx.restore()}
+
+function drawGrid(w,h){if(!S.gridOn)return;const g=S.gridSz;cx.save();cx.strokeStyle='rgba(0,122,255,.25)';cx.lineWidth=.5;cx.beginPath();
+  for(let x=g;x<w;x+=g){cx.moveTo(x,0);cx.lineTo(x,h)}for(let y=g;y<h;y+=g){cx.moveTo(0,y);cx.lineTo(w,y)}cx.stroke();
+  cx.strokeStyle='rgba(0,122,255,.5)';cx.lineWidth=1;cx.beginPath();cx.moveTo(w/2,0);cx.lineTo(w/2,h);cx.moveTo(0,h/2);cx.lineTo(w,h/2);cx.stroke();cx.restore()}
+
+/* Gestures */
+const ptrs=new Map();let rDrag=false;
+cv.addEventListener('pointerdown',e=>{if(e.button===2)rDrag=true;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});cv.setPointerCapture(e.pointerId);e.preventDefault()});
+cv.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId)||S.locked)return;
+  const p=ptrs.get(e.pointerId),c={x:e.clientX,y:e.clientY};
+  if(ptrs.size===1){
+    if(e.pointerType==='mouse'&&rDrag){S.rot+=(c.x-p.x)*.01}
+    else if(e.pointerType!=='mouse'||e.buttons===1){S.tx+=c.x-p.x;S.ty+=c.y-p.y}
+    redraw();
+  }else if(ptrs.size===2){
+    const o=[...ptrs.entries()].find(([id])=>id!==e.pointerId);if(!o)return;const op=o[1];
+    const od=Math.hypot(p.x-op.x,p.y-op.y),nd=Math.hypot(c.x-op.x,c.y-op.y);
+    const oa=Math.atan2(p.y-op.y,p.x-op.x),na=Math.atan2(c.y-op.y,c.x-op.x);
+    if(od>10){
+      const sf=nd/od,rd=na-oa;
+      const ocx=(p.x+op.x)/2,ocy=(p.y+op.y)/2,ncx=(c.x+op.x)/2,ncy=(c.y+op.y)/2;
+      S.tx+=ncx-ocx;S.ty+=ncy-ocy;
+      let rx=S.tx-ncx,ry=S.ty-ncy;rx*=sf;ry*=sf;S.sc*=sf;
+      const cs=Math.cos(rd),sn=Math.sin(rd);const nx=rx*cs-ry*sn,ny=rx*sn+ry*cs;
+      S.rot+=rd;S.tx=nx+ncx;S.ty=ny+ncy;
+    }
+    redraw();
+  }
+  ptrs.set(e.pointerId,c);e.preventDefault()},{passive:false});
+cv.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);if(e.button===2)rDrag=false});
+cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);rDrag=false});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('wheel',e=>{if(S.locked)return;e.preventDefault();const f=e.deltaY>0?.92:1.08,mx=e.clientX,my=e.clientY;
+  S.tx=mx+(S.tx-mx)*f;S.ty=my+(S.ty-my)*f;S.sc*=f;redraw()},{passive:false});
+
+/* Keyboard */
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();
+  if(k==='r'&&!e.ctrlKey&&!e.metaKey){fitImg();redraw()}
+  if(k==='l'){S.locked=!S.locked;updBtns();toast(S.locked?'已锁定':'已解锁')}
+  if(k==='g'){S.gridOn=!S.gridOn;updBtns();saveP();redraw()}
+  if(k==='='||k==='+'){S.sc*=1.1;redraw()}if(k==='-'){S.sc*=.9;redraw()}
+  if(k==='arrowleft'){S.tx-=5;redraw()}if(k==='arrowright'){S.tx+=5;redraw()}
+  if(k==='arrowup'){S.ty-=5;e.preventDefault();redraw()}if(k==='arrowdown'){S.ty+=5;e.preventDefault();redraw()}
+});
+
+/* Line Art Worker */
+let wk=null;
+function getWk(){if(wk)return wk;
+  const code=`'use strict';
+  function blur(d,w,h,r){if(r<1)return d;const k=[];const sg=Math.max(r/3,.3);let s=0;const sz=r*2+1;for(let i=0;i<sz;i++){const x=i-r;k.push(Math.exp(-(x*x)/(2*sg*sg)));s+=k[i]}for(let i=0;i<sz;i++)k[i]/=s;
+  const t=new Float32Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let v=0;for(let i=-r;i<=r;i++)v+=d[y*w+Math.min(w-1,Math.max(0,x+i))]*k[i+r];t[y*w+x]=v}
+  const o=new Float32Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let v=0;for(let i=-r;i<=r;i++)v+=t[Math.min(h-1,Math.max(0,y+i))*w+x]*k[i+r];o[y*w+x]=v}return o}
+  function sobel(g,w,h){const m=new Float32Array(w*h);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;
+  const gx=-g[(y-1)*w+x-1]-2*g[y*w+x-1]-g[(y+1)*w+x-1]+g[(y-1)*w+x+1]+2*g[y*w+x+1]+g[(y+1)*w+x+1];
+  const gy=-g[(y-1)*w+x-1]-2*g[(y-1)*w+x]-g[(y-1)*w+x+1]+g[(y+1)*w+x-1]+2*g[(y+1)*w+x]+g[(y+1)*w+x+1];
+  m[i]=Math.sqrt(gx*gx+gy*gy)}return m}
+  function dilate(d,w,h,r){if(r<1)return d;const o=new Uint8Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let mx=0;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const ny=y+dy,nx=x+dx;if(ny>=0&&ny<h&&nx>=0&&nx<w&&d[ny*w+nx]>mx)mx=d[ny*w+nx]}o[y*w+x]=mx}return o}
+  self.onmessage=function(e){const{pixels,width:w,height:h,strength,thickness,smoothing}=e.data;const src=new Uint8ClampedArray(pixels);
+  const g=new Float32Array(w*h);for(let i=0;i<w*h;i++)g[i]=.299*src[i*4]+.587*src[i*4+1]+.114*src[i*4+2];
+  const b=blur(g,w,h,smoothing);const edges=sobel(b,w,h);let mx=0;for(let i=0;i<edges.length;i++)if(edges[i]>mx)mx=edges[i];
+  const thr=(1-strength/100)*mx*.4;const bin=new Uint8Array(w*h);for(let i=0;i<edges.length;i++)bin[i]=edges[i]>thr?255:0;
+  const tk=dilate(bin,w,h,Math.max(0,Math.floor((thickness-1)/2)));
+  const out=new Uint8ClampedArray(w*h*4);for(let i=0;i<w*h;i++){const v=tk[i]>0?0:255;out[i*4]=v;out[i*4+1]=v;out[i*4+2]=v;out[i*4+3]=255}
+  self.postMessage({pixels:out.buffer,width:w,height:h},[out.buffer])};`;
+  wk=new Worker(URL.createObjectURL(new Blob([code],{type:'application/javascript'})));return wk}
+
+async function procLA(){
+  if(!S.ref){toast('请先导入参考图');return}showLd('生成线稿...');
+  try{let sw=S.ref.width,sh=S.ref.height;const MX=1200;if(sw>MX||sh>MX){const s=MX/Math.max(sw,sh);sw=Math.round(sw*s);sh=Math.round(sh*s)}
+  const c=document.createElement('canvas');c.width=sw;c.height=sh;c.getContext('2d').drawImage(S.ref,0,0,sw,sh);
+  const id=c.getContext('2d').getImageData(0,0,sw,sh);
+  const r=await new Promise((res,rej)=>{const w=getWk();w.onmessage=e=>res(e.data);w.onerror=rej;
+    w.postMessage({pixels:id.data.buffer,width:sw,height:sh,strength:+$('rStr').value,thickness:+$('rThk').value,smoothing:+$('rSmo').value},[id.data.buffer])});
+  const od=new ImageData(new Uint8ClampedArray(r.pixels),r.width,r.height);
+  const rc=document.createElement('canvas');rc.width=r.width;rc.height=r.height;rc.getContext('2d').putImageData(od,0,0);
+  S.laRes=await createImageBitmap(rc);S.laPv=true;$('bUseLa').disabled=false;$('bTogPv').textContent='查看原图';hideLd();redraw()}
+  catch(e){hideLd();toast('处理失败');console.error(e)}}
+
+/* Freeze camera */
+function freezeCam(){if(vd.readyState<2)return;const c=document.createElement('canvas');c.width=vd.videoWidth;c.height=vd.videoHeight;c.getContext('2d').drawImage(vd,0,0);S.camFr=c;S.camLk=true;stopLoop();redraw()}
+function unfreezeCam(){S.camLk=false;S.camFr=null;if(S.mode==='camera')startLoop()}
+
+/* Mode */
+function setMode(m,push=true){
+  const prev=S.mode;S.mode=m;
+  if(prev==='camera'&&m!=='camera'){pauseCam();stopLoop()}
+  if(m==='camera'){if(S.hasCam){if(S.stream&&!S.camLk){resumeCam();startLoop()}else if(!S.camLk)startCam(S.camId);else{stopLoop();redraw()}}else{S.mode='lightbox';m='lightbox';toast('未检测到摄像头')}}
+  else{pauseCam();stopLoop()}
+  updUI();updWL();if(push)history.pushState({mode:S.mode,rid:S.refId,lk:S.locked},'');redraw()}
+
+function updUI(){
+  document.querySelectorAll('.mt').forEach(t=>t.classList.toggle('act',t.dataset.m===S.mode));
+  if(!S.hasCam)$('tCam').classList.add('hid');
+  $('sCam').classList.toggle('hid',S.mode!=='camera');
+  $('sLb').classList.toggle('hid',S.mode!=='lightbox');
+  $('sLa').classList.toggle('hid',S.mode!=='lineart');
+  updBtns()}
+
+function updBtns(){
+  $('bLock').classList.toggle('act',S.locked);$('bLock').querySelector('svg+#_')||($('bLock').lastChild.textContent=S.locked?' 已锁定':' 锁定');
+  // Simpler: just set textContent after svg
+  const lockSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>';
+  const unlockSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4" opacity=".5"/></svg>';
+  $('bLock').innerHTML=(S.locked?lockSvg:unlockSvg)+(S.locked?'已锁定':'锁定');
+  $('bLock').classList.toggle('act',S.locked);
+  $('bGrid').classList.toggle('act',S.gridOn);$('rGsz').classList.toggle('hid',!S.gridOn);
+  $('bCfr').classList.toggle('act',S.camLk);
+  $('bCfr').innerHTML=S.camLk?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="4" y1="4" x2="20" y2="20"/></svg>解除':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="12" cy="12" r="3"/></svg>定格';
+  $('bInv').classList.toggle('act',S.inv);
+  $('bWk').classList.toggle('act',S.wlOn)}
+
+/* History panel */
+function showHist(){
+  const m=hMeta(),g=$('hGrid');g.innerHTML='';$('hEmp').style.display=m.length?'none':'block';
+  m.forEach(x=>{const d=document.createElement('div');d.className='hi';
+  const im=document.createElement('img');im.src=x.th;
+  const dl=document.createElement('button');dl.className='dl';dl.textContent='×';
+  const tm=document.createElement('div');tm.className='tm';tm.textContent=new Date(x.t).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  dl.onclick=ev=>{ev.stopPropagation();histDel(x.id);showHist()};
+  d.onclick=async()=>{const b=await histLoad(x.id);if(b){await loadImg(b,true);S.refId=x.id;$('oHis').classList.remove('sh');toast('已加载')}};
+  d.append(im,dl,tm);g.append(d)});$('oHis').classList.add('sh')}
+
+function showCamSel(){
+  const l=$('cList');l.innerHTML='';S.cams.forEach((c,i)=>{const li=document.createElement('li');li.textContent=c.label||'摄像头 '+(i+1);li.classList.toggle('act',c.deviceId===S.camId);
+  li.onclick=()=>{stopCam();S.camId=c.deviceId;startCam(c.deviceId);$('oCam').classList.remove('sh');saveP()};l.append(li)});$('oCam').classList.add('sh')}
+
+/* File import */
+async function handleFile(f){if(!f||!f.type.startsWith('image/')){toast('请选择图片');return}
+  const ok=await loadImg(f,false);if(ok){const id=await histSave(f);if(id)S.refId=id}}
+
+/* popstate */
+addEventListener('popstate',e=>{if(e.state&&e.state.mode){setMode(e.state.mode,false);if(e.state.lk!=null)S.locked=e.state.lk;updBtns()}$('oHis').classList.remove('sh');$('oCam').classList.remove('sh')});
+
+/* Panel drag */
+let pDrag=false,pDragY=0;
+$('ph').addEventListener('pointerdown',e=>{pDrag=true;pDragY=e.clientY;$('ph').setPointerCapture(e.pointerId)});
+$('ph').addEventListener('pointermove',e=>{if(!pDrag)return;const dy=e.clientY-pDragY;if(dy<-20){pnl.classList.add('open');pnl.classList.remove('peek')}if(dy>20){pnl.classList.remove('open');pnl.classList.remove('peek')}});
+$('ph').addEventListener('pointerup',()=>pDrag=false);$('ph').addEventListener('pointercancel',()=>pDrag=false);
+$('ph').addEventListener('click',()=>{pnl.classList.toggle('open');pnl.classList.remove('peek')});
+
+/* Bindings */
+$('tbtn').onclick=()=>{if(innerWidth<768){pnl.classList.remove('open');pnl.classList.toggle('peek')}else pnl.classList.toggle('collapsed')};
+document.querySelectorAll('.mt').forEach(t=>t.onclick=()=>setMode(t.dataset.m));
+$('bImp').onclick=()=>fi.click();
+fi.onchange=e=>{if(e.target.files[0])handleFile(e.target.files[0]);e.target.value=''};
+$('bHis').onclick=showHist;$('xHis').onclick=()=>$('oHis').classList.remove('sh');
+$('bHclr').onclick=()=>{hMeta().forEach(x=>{if(S.dbOk)idbDel(x.id);else try{localStorage.removeItem(x.id)}catch{}});hMetaSet([]);showHist();toast('已清空')};
+$('rOp').oninput=e=>{S.op=+e.target.value;$('vOp').textContent=S.op+'%';saveP();redraw()};
+$('rCon').oninput=e=>{S.con=+e.target.value;$('vCon').textContent=S.con;saveP();redraw()};
+$('bInv').onclick=()=>{S.inv=!S.inv;updBtns();saveP();redraw()};
+$('bGrid').onclick=()=>{S.gridOn=!S.gridOn;updBtns();saveP();redraw()};
+$('rGs').oninput=e=>{S.gridSz=+e.target.value;$('vGs').textContent=S.gridSz;saveP();redraw()};
+$('bLock').onclick=()=>{S.locked=!S.locked;updBtns();toast(S.locked?'参考图已锁定':'已解锁')};
+$('bRst').onclick=()=>{fitImg();S.op=50;S.con=0;S.inv=false;S.locked=false;$('rOp').value=50;$('vOp').textContent='50%';$('rCon').value=0;$('vCon').textContent='0';updBtns();saveP();redraw()};
+$('bCsw').onclick=showCamSel;$('xCam').onclick=()=>$('oCam').classList.remove('sh');
+$('bCfr').onclick=()=>{if(S.camLk)unfreezeCam();else freezeCam();updBtns()};
+$('bProc').onclick=procLA;
+$('rStr').oninput=e=>$('vStr').textContent=e.target.value;
+$('rThk').oninput=e=>$('vThk').textContent=e.target.value;
+$('rSmo').oninput=e=>$('vSmo').textContent=e.target.value;
+$('bTogPv').onclick=()=>{if(!S.laRes){toast('请先生成线稿');return}S.laPv=!S.laPv;$('bTogPv').textContent=S.laPv?'查看原图':'查看线稿';redraw()};
+$('bUseLa').onclick=async()=>{if(!S.laRes)return;const c=document.createElement('canvas');c.width=S.laRes.width;c.height=S.laRes.height;c.getContext('2d').drawImage(S.laRes,0,0);
+  const b=await new Promise(r=>c.toBlob(r,'image/png'));S.ref=S.laRes;S.laPv=false;const id=await histSave(b);if(id)S.refId=id;toast('线稿已设为参考图');redraw()};
+$('bWk').onclick=()=>{S.wlOn=!S.wlOn;updWL();updBtns();saveP()};
+$('oHis').onclick=e=>{if(e.target===$('oHis'))$('oHis').classList.remove('sh')};
+$('oCam').onclick=e=>{if(e.target===$('oCam'))$('oCam').classList.remove('sh')};
+
+/* Drag & drop */
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleFile(f)});
+
+/* 注册Service Worker (PWA核心) */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('./sw.js');
+      console.log('Service Worker 注册成功:', registration.scope);
+    } catch (error) {
+      console.log('Service Worker 注册失败:', error);
+    }
+  });
+}
+
+/* Init */
+async function init(){
+  loadP();resize();
+  $('rOp').value=S.op;$('vOp').textContent=S.op+'%';
+  $('rCon').value=S.con;$('vCon').textContent=S.con;
+  $('rGs').value=S.gridSz;$('vGs').textContent=S.gridSz;
+  try{await openDB()}catch(e){console.warn('IndexedDB降级',e)}
+  await detectCam();
+  if(!S.hasCam){S.mode='lightbox';$('tCam').classList.add('hid')}
+  history.replaceState({mode:S.mode},'');updUI();updBtns();
+  if(S.mode==='camera'&&S.hasCam)await startCam(S.camId);
+  updWL();redraw();toast('描摹助手已就绪 — 导入图片开始',2500)}
+init();
+</script>
+</body>
+</html>
